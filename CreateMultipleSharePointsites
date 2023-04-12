@@ -1,0 +1,36 @@
+# Import the SharePoint Online PowerShell module
+if (!(Get-Module Microsoft.Online.SharePoint.PowerShell -ListAvailable)) {
+    Write-Host "Microsoft.Online.SharePoint.PowerShell module not found. Installing..."
+    Install-Module Microsoft.Online.SharePoint.PowerShell -Force
+}
+Import-Module Microsoft.Online.SharePoint.PowerShell -DisableNameChecking
+
+# Set the CSV file path
+$csvFilePath = "C:\Scripts\sites.csv"
+
+# Connect to SharePoint Online using the SharePoint admin URL
+$SPAdminURL = "https://mysharepoint-admin.sharepoint.com"
+Connect-SPOService -Url $SPAdminURL
+
+# Read the CSV file and loop through each row
+$csvData = Import-Csv $csvFilePath
+foreach ($row in $csvData) {
+    $siteName = $row.'Site Name'
+    $urlSuffix = $row.'URL Suffix'
+    $siteOwner = $row.'Site Owner'
+
+    # Construct the URL for the new site
+    $url = "https://mysharepoint.sharepoint.com/sites/$urlSuffix"
+
+    # Check if the site already exists
+    if (Get-SPOSite $url -ErrorAction SilentlyContinue) {
+        Write-Warning "Site $siteName already exists. Skipping creation..."
+        continue
+    }
+
+    # Create the new site
+    New-SPOSite -Title $siteName -Url $url -Owner $siteOwner
+
+    # Output a message indicating the site was created
+    Write-Host "Site $siteName created at $url"
+}
